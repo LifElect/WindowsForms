@@ -1,8 +1,5 @@
-﻿//D:\Проги\VIsualStudioProjects\WindowsFormsApp3\Dir1
-//D:\Проги\VIsualStudioProjects\WindowsFormsApp3\Dir2
-
-
-using System;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
 
@@ -10,91 +7,69 @@ namespace WindowsFormsApp3
 {
     public partial class Form1 : Form, IView
     {
-        string sourceDir = @"C:\SourceDir";
-        string destDir = @"C:\DestDir";
         private readonly Presenter _presenter;
+        public string sourceDir = @"C:\SourceDirectory";
+        public string destDir = @"D:\TargetDirectory";
 
         public Form1()
         {
             InitializeComponent();
-            _presenter = new Presenter(this);
+            _presenter = new Presenter(this, new Model());
+        }
+
+        private void syncButton_Click(object sender, EventArgs e)
+        {
+            ClearLog();
+            ClearNames();
+            _presenter.StartSync(sourceDir, destDir);
         }
 
         public void AddLog(string logMessage)
         {
-            LogBox.Text = $"{DateTime.Now}: {logMessage}";
+            listBox3.Items.Add($"{DateTime.Now}: {logMessage}\n");
         }
-
-        public void ClearLog()
-        {
-            listBox1.Items.Clear();
-        }
-
-        public void ShowFiles(string sourceDir, string destDir)
-        {
-            string[] sourceFiles = Directory.GetFiles(sourceDir);
-            string[] destFiles = Directory.GetFiles(destDir);
-            foreach (string file in sourceFiles)
-            {
-                listBox1.Items.Add(Path.GetFileName(file));
-            }
-            foreach (string file in destFiles)
-            {
-                listBox2.Items.Add(Path.GetFileName(file));
-            }
-        }
-
         private void DestTextBoxChanged_TextChanged(object sender, EventArgs e)
         {
             destDir = destPath.Text;
         }
         private void SourceTextBoxChanged_TextChanged(object sender, EventArgs e)
         {
-           sourceDir = SourcePath.Text;
+            sourceDir = SourcePath.Text;
         }
-
-       
-
-
-        private void syncButton_Click(object sender, EventArgs e)
+        public void ClearLog()
         {
-            ClearLog();
-
-            if (Directory.Exists(sourceDir) && Directory.Exists(destDir))
-            {
-                _presenter.SyncDirectories(sourceDir, destDir);
-                ShowFiles(sourceDir, destDir);
-            }
-            else
-            {
-                AddLog("Ошибка: Одна из директорий не существует");
-            }
+            listBox3.Items.Clear();
         }
-
+        public void ClearNames()
+        {
+            listBox1.Items.Clear();
+            listBox2.Items.Clear();
+        }
+        public void ShowSourceNames(string fileName)
+        {
+            listBox1.Items.Add(fileName);
+        }
+        public void ShowDestNames(string fileName)
+        {
+            listBox2.Items.Add(fileName);
+        }
     }
     public interface IView
     {
         void AddLog(string logMessage);
         void ClearLog();
+        void ShowSourceNames(string fileName);
+        void ShowDestNames(string fileName);
+        void ClearNames();
     }
 
-    public class Presenter
+    public class Model
     {
-        private readonly IView _view;
+        public event Action<string> LogUpdated;
 
-        public Presenter(IView view)
+        public void SyncDirectories(string sourceDir, string destDir, IView _view)
         {
-            _view = view;
-        }
-
-        public void SyncDirectories(string sourceDir, string destDir)
-        {
-            SyncDirectory(sourceDir, destDir);
-            SyncDirectory(destDir, sourceDir);
-        }
-
-        private void SyncDirectory(string sourceDir, string destDir)
-        {
+            
             string[] sourceFiles = Directory.GetFiles(sourceDir);
             string[] destFiles = Directory.GetFiles(destDir);
 
@@ -106,7 +81,7 @@ namespace WindowsFormsApp3
                 if (!File.Exists(destFilePath))
                 {
                     File.Copy(file, destFilePath);
-                    _view.AddLog($"Файл \"{fileName}\" создан");
+                    _view.AddLog($"Файл \"{fileName}\" создан\n");
                 }
                 else
                 {
@@ -116,11 +91,11 @@ namespace WindowsFormsApp3
                     if (sourceFileLastWriteTime > destFileLastWriteTime)
                     {
                         File.Copy(file, destFilePath, true);
-                        _view.AddLog($"Файл \"{fileName}\" изменен");
+                        _view.AddLog($"Файл \"{fileName}\" изменен\n");
                     }
                     else if (sourceFileLastWriteTime == destFileLastWriteTime)
                     {
-                        _view.AddLog($"Директории идентичны");
+                        _view.AddLog($"Директории идентичны\n");
                     }
                 }
             }
@@ -136,8 +111,44 @@ namespace WindowsFormsApp3
                     _view.AddLog($"Файл \"{fileName}\" удален");
                 }
             }
+            LogUpdated?.Invoke("Директории успешно синхронизированы.");
+
+            foreach(string file in destFiles)
+            {
+                _view.ShowDestNames(Path.GetFileName(file));
+            }
+
+            foreach (string file in sourceFiles)
+            {
+                _view.ShowSourceNames(Path.GetFileName(file));
+            }
             
         }
     }
 
+    public class Presenter
+    {
+        private readonly IView _view;
+        private readonly Model _model;
+
+        public Presenter(IView view, Model model)
+        {
+            _view = view;
+            _model = model;
+
+            _model.LogUpdated += OnLogUpdated;
+        }
+
+        public void StartSync(string sourceDir, string targetDir)
+        {
+            _model.SyncDirectories(sourceDir, targetDir, _view);
+        }
+
+        private void OnLogUpdated(string logMessage)
+        {
+            _view.AddLog(logMessage);
+        }
+    }
+
 }
+

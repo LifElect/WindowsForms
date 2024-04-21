@@ -38,10 +38,10 @@
             this.directorySearcher2 = new System.DirectoryServices.DirectorySearcher();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.folderBrowserDialog2 = new System.Windows.Forms.FolderBrowserDialog();
-            this.LogBox = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
+            this.listBox3 = new System.Windows.Forms.ListBox();
             this.SuspendLayout();
             // 
             // btnSync
@@ -109,14 +109,6 @@
             this.directorySearcher2.ServerPageTimeLimit = System.TimeSpan.Parse("-00:00:01");
             this.directorySearcher2.ServerTimeLimit = System.TimeSpan.Parse("-00:00:01");
             // 
-            // LogBox
-            // 
-            this.LogBox.Location = new System.Drawing.Point(13, 407);
-            this.LogBox.Multiline = true;
-            this.LogBox.Name = "LogBox";
-            this.LogBox.Size = new System.Drawing.Size(699, 171);
-            this.LogBox.TabIndex = 7;
-            // 
             // label2
             // 
             this.label2.AutoSize = true;
@@ -140,19 +132,28 @@
             this.label4.AutoSize = true;
             this.label4.Location = new System.Drawing.Point(522, 74);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(90, 16);
+            this.label4.Size = new System.Drawing.Size(74, 16);
             this.label4.TabIndex = 10;
-            this.label4.Text = "Determination";
+            this.label4.Text = "Destination";
+            // 
+            // listBox3
+            // 
+            this.listBox3.FormattingEnabled = true;
+            this.listBox3.ItemHeight = 16;
+            this.listBox3.Location = new System.Drawing.Point(14, 407);
+            this.listBox3.Name = "listBox3";
+            this.listBox3.Size = new System.Drawing.Size(698, 164);
+            this.listBox3.TabIndex = 11;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(722, 590);
+            this.Controls.Add(this.listBox3);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.LogBox);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.SourcePath);
             this.Controls.Add(this.listBox2);
@@ -177,10 +178,10 @@
         private System.DirectoryServices.DirectorySearcher directorySearcher2;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog2;
-        private System.Windows.Forms.TextBox LogBox;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.ListBox listBox3;
     }
 }
 
