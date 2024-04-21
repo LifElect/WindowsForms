@@ -2,14 +2,16 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace WindowsFormsApp3
 {
     public partial class Form1 : Form, IView
     {
         private readonly Presenter _presenter;
-        public string sourceDir = @"C:\SourceDirectory";
-        public string destDir = @"D:\TargetDirectory";
+        public string SourceDir = @"C:\SourceDirectory";
+        public string DestDir = @"D:\TargetDirectory";
 
         public Form1()
         {
@@ -21,7 +23,7 @@ namespace WindowsFormsApp3
         {
             ClearLog();
             ClearNames();
-            _presenter.StartSync(sourceDir, destDir);
+            SyncDir(sender, e);
         }
 
         public void AddLog(string logMessage)
@@ -30,11 +32,11 @@ namespace WindowsFormsApp3
         }
         private void DestTextBoxChanged_TextChanged(object sender, EventArgs e)
         {
-            destDir = destPath.Text;
+            DestDir = destPath.Text;
         }
         private void SourceTextBoxChanged_TextChanged(object sender, EventArgs e)
         {
-            sourceDir = SourcePath.Text;
+            SourceDir = SourcePath.Text;
         }
         public void ClearLog()
         {
@@ -53,23 +55,37 @@ namespace WindowsFormsApp3
         {
             listBox2.Items.Add(fileName);
         }
-    }
+
+        public event EventHandler<EventArgs> SyncDir;
+
+        public string GetSourceDir()
+        {
+            return SourceDir;
+        }
+        public string GetDestDir()
+        {
+            return DestDir;
+        }
+        }
     public interface IView
     {
+        string GetDestDir();
+        string GetSourceDir();
         void AddLog(string logMessage);
         void ClearLog();
         void ShowSourceNames(string fileName);
         void ShowDestNames(string fileName);
         void ClearNames();
+        event EventHandler<EventArgs> SyncDir;
     }
 
     public class Model
     {
         public event Action<string> LogUpdated;
 
-        public void SyncDirectories(string sourceDir, string destDir, IView _view)
+        public List<string> SyncDirectories(string sourceDir, string destDir)
         {
-            
+            List<string> logResult = new List<string>();
             string[] sourceFiles = Directory.GetFiles(sourceDir);
             string[] destFiles = Directory.GetFiles(destDir);
 
@@ -81,7 +97,7 @@ namespace WindowsFormsApp3
                 if (!File.Exists(destFilePath))
                 {
                     File.Copy(file, destFilePath);
-                    _view.AddLog($"Файл \"{fileName}\" создан\n");
+                    logResult.Add($"Файл \"{fileName}\" создан");
                 }
                 else
                 {
@@ -91,11 +107,11 @@ namespace WindowsFormsApp3
                     if (sourceFileLastWriteTime > destFileLastWriteTime)
                     {
                         File.Copy(file, destFilePath, true);
-                        _view.AddLog($"Файл \"{fileName}\" изменен\n");
+                        logResult.Add($"Файл \"{fileName}\" изменен");
                     }
                     else if (sourceFileLastWriteTime == destFileLastWriteTime)
                     {
-                        _view.AddLog($"Директории идентичны\n");
+                        logResult.Add($"Директории идентичны");
                     }
                 }
             }
@@ -108,40 +124,59 @@ namespace WindowsFormsApp3
                 if (!File.Exists(sourceFilePath))
                 {
                     File.Delete(file);
-                    _view.AddLog($"Файл \"{fileName}\" удален");
+                    logResult.Add($"Файл \"{fileName}\" удален");
                 }
             }
             LogUpdated?.Invoke("Директории успешно синхронизированы.");
 
-            foreach(string file in destFiles)
-            {
-                _view.ShowDestNames(Path.GetFileName(file));
-            }
-
-            foreach (string file in sourceFiles)
-            {
-                _view.ShowSourceNames(Path.GetFileName(file));
-            }
-            
+            return logResult;
         }
+        public List<string> GetFileNames(string dirName)
+        {
+            List<string> fileNames = new List<string>();
+            foreach (string file in Directory.GetFiles(dirName))
+            {
+                fileNames.Add(Path.GetFileName(file));
+            }
+            return fileNames;
+        }
+
     }
 
     public class Presenter
     {
         private readonly IView _view;
         private readonly Model _model;
+        
 
         public Presenter(IView view, Model model)
         {
             _view = view;
             _model = model;
+            _view.SyncDir += new EventHandler<EventArgs>(StartSync);
 
             _model.LogUpdated += OnLogUpdated;
         }
 
-        public void StartSync(string sourceDir, string targetDir)
+        public void StartSync(object sender, EventArgs e)
         {
-            _model.SyncDirectories(sourceDir, targetDir, _view);
+            string sourceDir = _view.GetSourceDir();
+            string targetDir = _view.GetDestDir();
+
+            List<string> logs = new List<string>();
+            List<string> fileNames = new List<string>();
+
+            logs = _model.SyncDirectories(sourceDir, targetDir);
+            foreach(string logMessage in logs)
+            {
+                _view.AddLog(logMessage);
+            }
+            fileNames = _model.GetFileNames(sourceDir);
+            foreach(string file in fileNames)
+            {
+                _view.ShowDestNames(file);
+                _view.ShowSourceNames(file);
+            }
         }
 
         private void OnLogUpdated(string logMessage)
